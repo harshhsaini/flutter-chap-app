@@ -20,15 +20,18 @@ final TextEditingController _messageController = TextEditingController();
   final AuthServices _authServices = AuthServices();
   // send messages
   void sendMessage() async {
-    //if there is something inside the textfield
-    if(_messageController.text.isNotEmpty){
-      //send message
-      await _chatServices.sendMessage(
-          receiveID, _messageController.text);
-      //clear text controller
+  if(_messageController.text.isNotEmpty){
+    try {
+      //print("Attempting to send message: ${_messageController.text}");
+      //print("Receiver ID: $receiveID");
+      await _chatServices.sendMessage(receiveID, _messageController.text);
+      //print("Message sent successfully");
       _messageController.clear();
+    } catch (e) {
+      //print("Error sending message: $e");
     }
   }
+}
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -49,49 +52,58 @@ final TextEditingController _messageController = TextEditingController();
       ),
     );
   }
-  Widget _buildMessageList(){
-    String senderID = _authServices.getCurrentUser()!.uid;
-    return StreamBuilder(stream: _chatServices.getMessages(receiveID, senderID),
-        builder: (context, snapshot){
-      //errors
-         if(snapshot.hasError){
-           return Text('Error');
-         }
-       //loading
-          if(snapshot.connectionState == ConnectionState.waiting){
-            return const Text('Loading..');
-          }
-        // return list view
-          return ListView(
-            children: snapshot.data!.docs.map((doc) =>
-            _buildMessageItem(doc)).toList(),
-            );
-        }
-        );
-  }
+  Widget _buildMessageList() {
+  String senderID = _authServices.getCurrentUser()!.uid;
+  return StreamBuilder(
+    stream: _chatServices.getMessages(receiveID, senderID),
+    builder: (context, snapshot) {
+     // print("Connection state: ${snapshot.connectionState}");
+     // print("Has data: ${snapshot.hasData}");
+      if (snapshot.hasData) {
+        //print("Number of messages: ${snapshot.data!.docs.length}");
+      }
+      
+      if (snapshot.connectionState == ConnectionState.waiting) {
+        return const Center(child: CircularProgressIndicator());
+      }
+      
+      if (snapshot.hasError) {
+        //print("Stream error: ${snapshot.error}");
+        return Center(child: Text('Error: ${snapshot.error}'));
+      }
+      
+      if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+        return const Center(child: Text('No messages yet'));
+      }
+
+      return ListView.builder(
+        reverse: true,
+        itemCount: snapshot.data!.docs.length,
+        itemBuilder: (context, index) {
+          return _buildMessageItem(snapshot.data!.docs[index]);
+        },
+      );
+    }
+  );
+}
   //build message item
-  Widget _buildMessageItem(DocumentSnapshot doc){
-    Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+  Widget _buildMessageItem(DocumentSnapshot doc) {
+  Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
 
-    // current user
-bool isCurrentUser = data['senderID'] == _authServices.getCurrentUser()!.uid;
-    //current user message alignment right
-var alignment =
-    isCurrentUser ? Alignment.centerRight : Alignment.centerLeft;
-
-    return Container(
-      alignment: alignment,
-      child: Column(
-        crossAxisAlignment:
-          isCurrentUser  ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-        children: [
-     ChatBubble(
-          message: data["message"],
-          isCurrentUser: isCurrentUser,)
-        ],
+  // current user
+  bool isCurrentUser = data['senderID'] == _authServices.getCurrentUser()!.uid;
+  
+  return Container(
+    alignment: isCurrentUser ? Alignment.centerRight : Alignment.centerLeft,
+    child: Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: ChatBubble(
+        message: data["message"],
+        isCurrentUser: isCurrentUser,
       ),
-    );
-  }
+    ),
+  );
+}
   //build message input
     Widget _buildUserInput(){
     return Padding(padding: EdgeInsets.only(bottom: 50),
@@ -108,7 +120,7 @@ var alignment =
         //send button
         Container(
           decoration: BoxDecoration(
-            color: Colors.purple,
+            color: const Color(0xFF00BCD4),
             shape: BoxShape.circle,
           ),
           margin: EdgeInsets.only(right: 25) ,
