@@ -16,7 +16,7 @@ This **Chat Application** is built using **Flutter & Firebase**, enabling real-t
 ## Setup
 1. Clone the repository:
    ```sh
-   git clone https://github.com/your-repo/chat-app.git && cd chat-app
+   git clone https://github.com/harshhsaini/flutter-chap-app && cd chat-app
    ```
 2. Set up Firebase in your Flutter project.
 3. Run the app:
